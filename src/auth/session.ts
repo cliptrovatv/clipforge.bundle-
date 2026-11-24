@@ -23,7 +23,7 @@ export async function signSession(secret: string, now = Date.now()): Promise<str
 }
 
 export async function verifySession(token: string | undefined, secret: string, now = Date.now()): Promise<boolean> {
-  if (!token) return false;
+  if (!token || !secret) return false;
   const [exp, sig] = token.split('.');
   if (!exp || !sig || !/^\d+$/.test(exp)) return false;
   if (Number(exp) < now) return false;

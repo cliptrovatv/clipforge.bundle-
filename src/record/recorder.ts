@@ -40,7 +40,17 @@ export function buildFfmpegArgs(outDir: string): string[] {
 
 const TAIL = 4000;
 
-export function startRecorder(liveUrl: string, outDir: string, spawn: Spawn = realSpawn): RecorderHandle {
+export interface RecorderOptions {
+  /** After stop(), SIGKILL both processes if they haven't exited within this time. */
+  killAfterMs?: number;
+}
+
+export function startRecorder(
+  liveUrl: string,
+  outDir: string,
+  spawn: Spawn = realSpawn,
+  { killAfterMs = 10_000 }: RecorderOptions = {},
+): RecorderHandle {
   fs.mkdirSync(outDir, { recursive: true });
   let tail = '';
   const addTail = (d: Buffer | string) => {
@@ -65,11 +75,13 @@ export function startRecorder(liveUrl: string, outDir: string, spawn: Spawn = re
     ff.stdin.end();
   });
 
+  let settled = false;
+  let killTimer: NodeJS.Timeout | undefined;
   const done = new Promise<{ code: number; stderrTail: string }>((resolve) => {
-    let settled = false;
     const finish = (code: number) => {
       if (settled) return;
       settled = true;
+      clearTimeout(killTimer);
       if (!slExited) sl.kill('SIGINT');
       resolve({ code, stderrTail: tail });
     };
@@ -83,7 +95,14 @@ export function startRecorder(liveUrl: string, outDir: string, spawn: Spawn = re
   return {
     done,
     stop() {
+      if (settled) return;
       if (!slExited) sl.kill('SIGINT');
+      killTimer ??= setTimeout(() => {
+        if (settled) return;
+        if (!slExited) sl.kill('SIGKILL');
+        ff.kill('SIGKILL');
+      }, killAfterMs);
+      killTimer.unref?.();
     },
     async bytesWritten() {
       const files = await fs.promises.readdir(outDir).catch(() => [] as string[]);

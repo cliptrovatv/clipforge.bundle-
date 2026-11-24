@@ -59,6 +59,7 @@ describe('repo', () => {
     await pool.query("UPDATE recordings SET started_at = now() - interval '10 days' WHERE id = $1", [active.id]);
     const res = await repo.recordingsOlderThan(new Date(Date.now() - 7 * 86400e3));
     expect(res.map((r) => r.dir)).toEqual(['/old']);
+    expect((await repo.allRecordingDirs()).sort()).toEqual(['/active', '/old', '/recent']);
     await repo.deleteRecording(old.id);
     expect(await repo.listRecordings()).toHaveLength(2);
   });

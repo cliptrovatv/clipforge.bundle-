@@ -22,6 +22,7 @@ describe('checkLive', () => {
     expect(run.calls[0][0]).toBe('yt-dlp');
     expect(run.calls[0]).toContain('--dump-single-json');
     expect(run.calls[0]).toContain('https://www.twitch.tv/xqc');
+    expect(run.calls[0]).toContain('--ignore-no-formats-error');
   });
 
   it('treats upcoming as not live', async () => {

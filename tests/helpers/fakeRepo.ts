@@ -51,6 +51,7 @@ export function fakeRepo(): FakeRepo {
     async deleteRecording(id) {
       recs.splice(recs.findIndex((r) => r.id === id), 1);
     },
+    allRecordingDirs: async () => recs.map((r) => r.dir),
   };
   return repo;
 }

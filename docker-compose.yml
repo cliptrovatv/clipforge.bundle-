@@ -8,6 +8,11 @@ services:
       POSTGRES_DB: clipforge
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clipforge -d clipforge"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   web:
     build: .
@@ -18,19 +23,27 @@ services:
       DATABASE_URL: postgres://clipforge:${POSTGRES_PASSWORD}@postgres:5432/clipforge
     volumes:
       - data:/data
-    depends_on: [postgres]
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   worker:
     image: clipforge
+    pull_policy: never # built by the web service
+    init: true # forwards docker stop's SIGTERM so recordings close cleanly
     restart: unless-stopped
-    command: ["npm", "run", "worker"]
+    command: ["node", "--import", "tsx", "src/worker/main.ts"]
     stop_grace_period: 30s
     env_file: .env
     environment:
       DATABASE_URL: postgres://clipforge:${POSTGRES_PASSWORD}@postgres:5432/clipforge
     volumes:
       - data:/data
-    depends_on: [postgres, web]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      web:
+        condition: service_started
 
   caddy:
     image: caddy:2

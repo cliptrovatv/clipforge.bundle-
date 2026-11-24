@@ -13,6 +13,7 @@ describe('session', () => {
     expect(await verifySession(await signSession('sec', Date.now() - 31 * 86400e3), 'sec')).toBe(false);
     expect(await verifySession('', 'sec')).toBe(false);
     expect(await verifySession(undefined, 'sec')).toBe(false);
+    expect(await verifySession(t, '')).toBe(false);
   });
   it('checks the password', () => {
     expect(checkPassword('hunter2', 'hunter2')).toBe(true);

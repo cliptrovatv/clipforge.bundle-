@@ -19,6 +19,7 @@ export interface Repo {
   getRecording(id: number): Promise<(Recording & { channel: Channel }) | null>;
   recordingsOlderThan(cutoff: Date): Promise<Recording[]>;
   deleteRecording(id: number): Promise<void>;
+  allRecordingDirs(): Promise<string[]>;
 }
 
 export function createRepo(db: Db): Repo {
@@ -78,6 +79,9 @@ export function createRepo(db: Db): Repo {
         .where(and(isNotNull(recordings.endedAt), lt(recordings.endedAt, cutoff))),
     async deleteRecording(id) {
       await db.delete(recordings).where(eq(recordings.id, id));
+    },
+    async allRecordingDirs() {
+      return (await db.select({ dir: recordings.dir }).from(recordings)).map((r) => r.dir);
     },
   };
 }

@@ -17,6 +17,10 @@ function setup(opts: { cap?: number } = {}) {
   const recorders: FakeRec[] = [];
   const checked: string[] = [];
   let free = 100;
+  let now = new Date('2026-11-24T12:00:00Z');
+  let bytes = 42;
+  let failStartFor: string | null = null;
+  let stopResolves = true;
   const deps: SupervisorDeps = {
     repo,
     checkLive: async (url) => {
@@ -26,19 +30,20 @@ function setup(opts: { cap?: number } = {}) {
       return s ?? { live: false, title: null, displayName: null };
     },
     startRecorder: (url, dir) => {
+      if (url === failStartFor) throw new Error('EACCES: permission denied');
       let resolve!: (v: { code: number; stderrTail: string }) => void;
       const done = new Promise<{ code: number; stderrTail: string }>((r) => (resolve = r));
       const rec: FakeRec = {
         url, dir, done, stopped: false,
-        stop() { rec.stopped = true; resolve({ code: 0, stderrTail: '' }); },
-        bytesWritten: async () => 42,
+        stop() { rec.stopped = true; if (stopResolves) resolve({ code: 0, stderrTail: '' }); },
+        bytesWritten: async () => bytes,
         end(code) { resolve({ code, stderrTail: 'boom' }); },
       };
       recorders.push(rec);
       return rec;
     },
     freeDiskGb: async () => free,
-    now: () => new Date('2026-11-24T12:00:00Z'),
+    now: () => now,
     config: loadConfig({
       DATABASE_URL: 'x', APP_PASSWORD: 'p', SESSION_SECRET: 's', DATA_DIR: dataDir,
       MAX_CONCURRENT_RECORDINGS: String(opts.cap ?? 8),
@@ -46,7 +51,14 @@ function setup(opts: { cap?: number } = {}) {
   };
   const on = (url: string) => live.set(url, { live: true, title: 'T', displayName: 'Name' });
   const off = (url: string) => live.set(url, { live: false, title: null, displayName: null });
-  return { sup: new Supervisor(deps), repo, live, on, off, recorders, checked, dataDir, setFree: (n: number) => (free = n) };
+  return {
+    sup: new Supervisor(deps), repo, live, on, off, recorders, checked, dataDir,
+    setFree: (n: number) => (free = n),
+    advance: (ms: number) => (now = new Date(now.getTime() + ms)),
+    setBytes: (n: number) => (bytes = n),
+    failStart: (url: string | null) => (failStartFor = url),
+    stuckStops: () => (stopResolves = false),
+  };
 }
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
@@ -167,5 +179,64 @@ describe('Supervisor', () => {
     await t.sup.stopAll();
     expect(t.recorders[0].stopped).toBe(true);
     expect(t.repo.recs[0].status).toBe('done');
+  });
+
+  it('a recorder that never stops does not freeze the loop', async () => {
+    const t = setup();
+    const a = t.repo.add('kick.com/a');
+    const b = t.repo.add('kick.com/b');
+    t.on(a.liveUrl);
+    await t.sup.tick();
+    t.stuckStops();
+    await t.repo.setChannelEnabled(a.id, false);
+    t.on(b.liveUrl);
+    await t.sup.tick();
+    expect(t.recorders[0].stopped).toBe(true);
+    expect(t.recorders.map((r) => r.url)).toContain(b.liveUrl);
+  });
+
+  it('backs off a live channel whose recordings keep failing instantly with no footage', async () => {
+    const t = setup();
+    const a = t.repo.add('kick.com/a');
+    t.on(a.liveUrl);
+    t.setBytes(0);
+    await t.sup.tick();
+    t.recorders[0].end(1);
+    await flush();
+    t.advance(60_000);
+    await t.sup.tick();
+    expect(t.recorders).toHaveLength(1);
+    expect(t.sup.status()[a.id]).toBe('error');
+    t.advance(2 * 60_000);
+    await t.sup.tick();
+    expect(t.recorders).toHaveLength(2);
+    t.recorders[1].end(1);
+    await flush();
+    t.advance(3 * 60_000);
+    await t.sup.tick();
+    expect(t.recorders).toHaveLength(2); // backoff doubled to 4 min
+    t.advance(2 * 60_000);
+    await t.sup.tick();
+    expect(t.recorders).toHaveLength(3);
+    t.setBytes(5_000_000);
+    t.recorders[2].end(1);
+    await flush();
+    t.advance(60_000);
+    await t.sup.tick();
+    expect(t.recorders).toHaveLength(4); // real footage resets the backoff
+  });
+
+  it('a recorder that fails to start marks its row failed and other channels still start', async () => {
+    const t = setup();
+    const a = t.repo.add('kick.com/a');
+    const b = t.repo.add('kick.com/b');
+    t.on(a.liveUrl);
+    t.on(b.liveUrl);
+    t.failStart(a.liveUrl);
+    await t.sup.tick();
+    expect(t.repo.recs.find((r) => r.channelId === a.id)!.status).toBe('failed');
+    expect(t.repo.recs.find((r) => r.channelId === a.id)!.error).toContain('EACCES');
+    expect(t.sup.status()[a.id]).toBe('error');
+    expect(t.sup.status()[b.id]).toBe('recording');
   });
 });

@@ -24,7 +24,7 @@ const NOT_LIVE: LiveStatus = { live: false, title: null, displayName: null };
 export async function checkLive(liveUrl: string, run: Run = realRun): Promise<LiveStatus> {
   const res = await run(
     'yt-dlp',
-    ['--dump-single-json', '--no-download', '--no-warnings', '--skip-download', '--no-playlist', liveUrl],
+    ['--dump-single-json', '--no-download', '--no-warnings', '--skip-download', '--no-playlist', '--ignore-no-formats-error', liveUrl],
     { timeoutMs: 45_000 },
   );
   if (res.code !== 0) {

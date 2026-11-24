@@ -5,7 +5,8 @@ import { createRepo } from '../db/repo';
 import { checkLive } from '../live/check';
 import { startRecorder } from '../record/recorder';
 import { Supervisor } from './supervisor';
-import { cleanupOldRecordings } from './retention';
+import path from 'node:path';
+import { cleanupOldRecordings, cleanupOrphanDirs } from './retention';
 import { freeDiskGb } from './disk';
 
 async function main() {
@@ -41,6 +42,8 @@ async function main() {
     try {
       const n = await cleanupOldRecordings(repo, new Date(), config.retentionDays);
       if (n) console.log(`[worker] removed ${n} recordings older than ${config.retentionDays} days`);
+      const o = await cleanupOrphanDirs(repo, path.join(config.dataDir, 'recordings'), new Date());
+      if (o) console.log(`[worker] removed ${o} recording folders of deleted channels`);
     } catch (e) {
       console.error('[worker] cleanup failed', e);
     }

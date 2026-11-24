@@ -69,4 +69,29 @@ describe('startRecorder', () => {
     const h = startRecorder('u', dir, () => fakeChild());
     expect(await h.bytesWritten()).toBe(30);
   });
+
+  it('escalates to SIGKILL on both processes if they ignore SIGINT', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cf-'));
+    const kids: Record<string, ReturnType<typeof fakeChild>> = {};
+    const h = startRecorder('u', dir, (cmd) => (kids[cmd] = fakeChild()), { killAfterMs: 20 });
+    h.stop();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(kids.streamlink.signals).toEqual(['SIGINT', 'SIGKILL']);
+    expect(kids.ffmpeg.signals).toContain('SIGKILL');
+    kids.ffmpeg.exit(137);
+    expect((await h.done).code).toBe(137);
+  });
+
+  it('does not SIGKILL when processes exit after SIGINT in time', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cf-'));
+    const kids: Record<string, ReturnType<typeof fakeChild>> = {};
+    const h = startRecorder('u', dir, (cmd) => (kids[cmd] = fakeChild()), { killAfterMs: 30 });
+    h.stop();
+    kids.streamlink.exit(0);
+    kids.ffmpeg.exit(0);
+    await h.done;
+    await new Promise((r) => setTimeout(r, 50));
+    expect(kids.streamlink.signals).toEqual(['SIGINT']);
+    expect(kids.ffmpeg.signals).toEqual([]);
+  });
 });

@@ -44,7 +44,7 @@ export default function Streamers() {
   }
 
   async function remove(c: Ch) {
-    if (!confirm(`Stop watching ${c.displayName ?? c.handle}? Its recordings will be deleted from the list.`)) return;
+    if (!confirm(`Stop watching ${c.displayName ?? c.handle}? Its recordings will be deleted.`)) return;
     await fetch(`/api/channels/${c.id}`, { method: 'DELETE' });
     load();
   }
