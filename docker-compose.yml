@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: clipforge
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: clipforge
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  web:
+    build: .
+    image: clipforge
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://clipforge:${POSTGRES_PASSWORD}@postgres:5432/clipforge
+    volumes:
+      - data:/data
+    depends_on: [postgres]
+
+  worker:
+    image: clipforge
+    restart: unless-stopped
+    command: ["npm", "run", "worker"]
+    stop_grace_period: 30s
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://clipforge:${POSTGRES_PASSWORD}@postgres:5432/clipforge
+    volumes:
+      - data:/data
+    depends_on: [postgres, web]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on: [web]
+
+volumes:
+  pgdata:
+  data:
+  caddy_data:
