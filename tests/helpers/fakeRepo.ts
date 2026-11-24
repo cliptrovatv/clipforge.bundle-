@@ -1,13 +1,15 @@
 import type { Repo, Channel, Recording } from '@/src/db/repo';
 import { resolveChannel } from '@/src/channels/resolve';
 
-export function fakeRepo(): Repo & { channels: Channel[]; recs: Recording[]; add(link: string): Channel } {
+type FakeRepo = Repo & { channels: Channel[]; recs: Recording[]; add(link: string): Channel };
+
+export function fakeRepo(): FakeRepo {
   const channels: Channel[] = [];
   const recs: Recording[] = [];
   let cid = 0;
   let rid = 0;
   const withCh = (r: Recording) => ({ ...r, channel: channels.find((c) => c.id === r.channelId)! });
-  const repo = {
+  const repo: FakeRepo = {
     channels,
     recs,
     add(link: string) {
@@ -49,6 +51,6 @@ export function fakeRepo(): Repo & { channels: Channel[]; recs: Recording[]; add
     async deleteRecording(id) {
       recs.splice(recs.findIndex((r) => r.id === id), 1);
     },
-  } satisfies Repo & { channels: Channel[]; recs: Recording[]; add(link: string): Channel };
+  };
   return repo;
 }

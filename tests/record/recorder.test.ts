@@ -48,13 +48,13 @@ describe('startRecorder', () => {
     expect(fs.existsSync(dir)).toBe(true);
     let got = '';
     kids.ffmpeg.stdin.on('data', (d) => (got += d));
-    kids.streamlink.stdout.write('VIDEO');
+    (kids.streamlink.stdout as PassThrough).write('VIDEO');
     await new Promise((r) => setImmediate(r));
     expect(got).toBe('VIDEO');
     h.stop();
     expect(kids.streamlink.signals).toContain('SIGINT');
     kids.streamlink.exit(0);
-    kids.ffmpeg.stderr.write('some error\n');
+    (kids.ffmpeg.stderr as PassThrough).write('some error\n');
     kids.ffmpeg.exit(3);
     const res = await h.done;
     expect(res.code).toBe(3);
