@@ -1,8 +1,6 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { loadConfig } from '../config';
 import { createDb } from '../db/client';
+import { migrate } from '../db/migrate';
 import { createRepo } from '../db/repo';
 import { checkLive } from '../live/check';
 import { startRecorder } from '../record/recorder';
@@ -13,8 +11,7 @@ import { freeDiskGb } from './disk';
 async function main() {
   const config = loadConfig();
   const { db, pool } = createDb(config.databaseUrl);
-  const here = path.dirname(fileURLToPath(import.meta.url));
-  await pool.query(fs.readFileSync(path.join(here, '../db/migrate.sql'), 'utf8'));
+  await migrate(pool);
   const repo = createRepo(db);
 
   const sup = new Supervisor({

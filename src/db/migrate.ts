@@ -1,3 +1,6 @@
+import type pg from 'pg';
+
+export const MIGRATION_SQL = `
 CREATE TABLE IF NOT EXISTS channels (
   id serial PRIMARY KEY,
   platform text NOT NULL,
@@ -20,3 +23,8 @@ CREATE TABLE IF NOT EXISTS recordings (
   error text
 );
 CREATE INDEX IF NOT EXISTS recordings_status_idx ON recordings(status);
+`;
+
+export async function migrate(pool: pg.Pool): Promise<void> {
+  await pool.query(MIGRATION_SQL);
+}
