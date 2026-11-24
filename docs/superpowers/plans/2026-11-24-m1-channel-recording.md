@@ -249,4 +249,4 @@
 
 ## Later plans (not in M1)
 
-M2 campaigns + rule checker · M3 moment detection, scoring, 4K shorts, quality gate, Postiz scheduling, push notifications, per-streamer best-clips boards · M4 4K mashups · M5 autopilot, earnings, assistant chat. Note for M3: Twitch EventSub `stream.online` can replace polling for faster starts.
+M2 campaigns + rule checker · M3 moment detection, scoring, 4K shorts, quality gate, Postiz scheduling, push notifications, per-streamer best-clips boards · M4 4K long videos (mashups + highlight cuts, horizontal 3840×2160 or vertical 2160×3840) · M5 autopilot, earnings, assistant chat. Note for M3: Twitch EventSub `stream.online` can replace polling for faster starts.

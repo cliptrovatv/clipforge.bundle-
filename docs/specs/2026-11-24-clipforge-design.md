@@ -32,9 +32,14 @@ scheduled on three platforms" to minutes, from a phone or a desktop.
    (hook strength, payoff, standalone-ness, campaign fit), with a one-line reason.
 6. **Shorts:** 9:16, speaker/face reframe, animated captions, hook title on the
    first frame, exported at **2160×3840 (4K)**.
-7. **Mashups:** long-form 16:9 compilations at **3840×2160** ("Top 10 moments this
-   week", "Every rage moment", multi-streamer) — Claude picks and orders moments,
-   writes the title card text, the app assembles with transitions.
+7. **Long videos, horizontal or vertical:** on demand, build long-form videos in
+   either orientation, chosen per video: **horizontal 3840×2160** (YouTube
+   main channel) or **vertical 2160×3840** (long TikTok / YouTube vertical).
+   Types: multi-moment mashups ("Top 10 moments this week", "Every rage moment",
+   multi-streamer), and single-stream highlight cuts (e.g. a 10–20 min "best of
+   yesterday's stream"). Claude picks and orders moments, writes title cards;
+   the app assembles with transitions. Vertical long videos reuse the short's
+   reframing (face/speaker tracking); horizontal keeps the full frame.
 8. **Campaign manager:** each campaign stores streamer(s), allowed platforms, rules
    (length, required tags/mentions/links, banned content), payout rate, deadline.
    Every clip is checked against its campaign's rules before it can be scheduled.
@@ -161,7 +166,7 @@ scheduled on three platforms" to minutes, from a phone or a desktop.
 2. Campaign manager + rule checker + credit lines.
 3. Paste-a-link → scored moments → 4K short → schedule; Live Moment Radar, push
    notifications, per-streamer best-clips boards.
-4. Mashups.
+4. Long videos (mashups + highlight cuts), horizontal or vertical, 4K.
 5. Autopilot, analytics/earnings, assistant chat.
 
 ## Left to the builder
