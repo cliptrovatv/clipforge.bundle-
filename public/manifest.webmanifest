@@ -1,0 +1,9 @@
+{
+  "name": "ClipForge",
+  "short_name": "ClipForge",
+  "start_url": "/streamers",
+  "display": "standalone",
+  "background_color": "#0e0f13",
+  "theme_color": "#0e0f13",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
